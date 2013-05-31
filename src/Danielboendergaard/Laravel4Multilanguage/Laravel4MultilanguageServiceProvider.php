@@ -23,7 +23,7 @@ class Laravel4MultilanguageServiceProvider extends ServiceProvider {
 	 */
 	public function register()
 	{
-        $languages = Config::get('app.languages');
+        $languages = Config::get('app.languages', []);
 
         $locale = $this->app['request']->segment(1);
 
