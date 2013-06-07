@@ -49,7 +49,7 @@ class UrlGenerator extends BaseUrlGenerator {
         $root = $this->getRootUrl($scheme);
 
         // Prefix locale
-        if ($this->locale and ($this->request->path() != $path))
+        if ($this->locale and ($this->request->path() !=  ltrim($path, '/')))
         {
             $root = rtrim($root, '/').'/'.$this->locale;
         }
