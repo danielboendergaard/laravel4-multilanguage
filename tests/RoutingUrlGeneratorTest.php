@@ -12,16 +12,6 @@ class RoutingUrlGeneratorTest extends PHPUnit_Framework_TestCase {
         m::close();
     }
 
-    public function testBasicUrlGeneration()
-    {
-        $gen = $this->getGenerator();
-        $gen->setRequest(Request::create('http://foobar.com/foo/bar', 'GET'));
-
-        $this->assertEquals('http://foobar.com/something', $gen->to('something'));
-        $this->assertEquals('https://foobar.com/something', $gen->secure('something'));
-        $this->assertEquals('http://foobar.com/something/dayle/rees', $gen->to('something', array('dayle', 'rees')));
-    }
-
     public function testBasicMultilingualUrlGeneration()
     {
         $gen = $this->getMultilingualGenerator();
@@ -48,6 +38,7 @@ class RoutingUrlGeneratorTest extends PHPUnit_Framework_TestCase {
         $gen = $this->getGenerator();
         $gen->setRequest(Request::create('http://foobar.com/index.php/foo/bar', 'GET'));
 
+        $this->assertEquals('http://foobar.com/', $gen->asset('/'));
         $this->assertEquals('http://foobar.com/something', $gen->asset('something'));
         $this->assertEquals('https://foobar.com/something', $gen->secureAsset('something'));
     }
@@ -77,7 +68,7 @@ class RoutingUrlGeneratorTest extends PHPUnit_Framework_TestCase {
     }
 
 
-    public function testRouteParametersCanBeShortCircuted()
+    public function testRouteParametersCanBeShortCircuited()
     {
         $gen = $this->getGenerator();
         $symfonyGen = m::mock('Symfony\Component\Routing\Generator\UrlGenerator');
@@ -89,7 +80,7 @@ class RoutingUrlGeneratorTest extends PHPUnit_Framework_TestCase {
     }
 
 
-    public function testRouteParametersCanBeShortCircutedWithOptionals()
+    public function testRouteParametersCanBeShortCircuitedWithOptionals()
     {
         $gen = $this->getGenerator();
         $symfonyGen = m::mock('Symfony\Component\Routing\Generator\UrlGenerator');
@@ -119,6 +110,16 @@ class RoutingUrlGeneratorTest extends PHPUnit_Framework_TestCase {
     }
 
 
+    public function testUrlGeneratorUsesCurrentSchemeIfNoneSpecified()
+    {
+        $router = new Router;
+        $router->get('/', array('as' => 'home', function() {}));
+        $request = Request::create('https://dayle.com');
+        $gen = new UrlGenerator($router->getRoutes(), $request);
+
+        $this->assertEquals('https://dayle.com/', $gen->route('home'));
+    }
+
     protected function getGenerator()
     {
         $router = new Router;
@@ -129,7 +130,7 @@ class RoutingUrlGeneratorTest extends PHPUnit_Framework_TestCase {
         $router->get('foo/{boom?}/{breeze?}', array('as' => 'foo.breeze', function() {}));
         $router->get('/boom/baz/{name}', array('uses' => 'FooController@fooAction'));
 
-        return new UrlGenerator($router->getRoutes(), Request::create('/'), null);
+        return new UrlGenerator($router->getRoutes(), Request::create('/'));
     }
 
     protected function getMultilingualGenerator()

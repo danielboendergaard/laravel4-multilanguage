@@ -2,6 +2,7 @@
 
 use Config;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Redirector;
 use Illuminate\Support\ServiceProvider;
 
 class Laravel4MultilanguageServiceProvider extends ServiceProvider {
@@ -30,15 +31,18 @@ class Laravel4MultilanguageServiceProvider extends ServiceProvider {
         if (in_array($locale, $languages))
         {
             Config::set('app.locale', $locale);
-
-            $this->removeLocaleFromRequest($locale);
         }
         else
         {
             $locale = null;
         }
 
+        $this->registerRouter($locale);
+
         $this->registerUrlGenerator($locale);
+
+        // Reregister redirector to use custom UrlGenerator
+        $this->registerRedirector();
 	}
 
     /**
@@ -58,6 +62,30 @@ class Laravel4MultilanguageServiceProvider extends ServiceProvider {
     }
 
     /**
+     * Register the router instance.
+     *
+     * @param $locale
+     * @return void
+     */
+    protected function registerRouter($locale)
+    {
+        $this->app['router'] = $this->app->share(function($app) use ($locale)
+        {
+            $router = new Router($app, $locale);
+
+            // If the current application environment is "testing", we will disable the
+            // routing filters, since they can be tested independently of the routes
+            // and just get in the way of our typical controller testing concerns.
+            if ($app['env'] == 'testing')
+            {
+                $router->disableFilters();
+            }
+
+            return $router;
+        });
+    }
+
+    /**
      * Register the URL generator service.
      *
      * @param $locale
@@ -73,6 +101,29 @@ class Laravel4MultilanguageServiceProvider extends ServiceProvider {
             $routes = $app['router']->getRoutes();
 
             return new UrlGenerator($routes, $app['request'], $locale);
+        });
+    }
+
+    /**
+     * Register the Redirector service.
+     *
+     * @return void
+     */
+    protected function registerRedirector()
+    {
+        $this->app['redirect'] = $this->app->share(function($app)
+        {
+            $redirector = new Redirector($app['url']);
+
+            // If the session is set on the application instance, we'll inject it into
+            // the redirector instance. This allows the redirect responses to allow
+            // for the quite convenient "with" methods that flash to the session.
+            if (isset($app['session']))
+            {
+                $redirector->setSession($app['session']);
+            }
+
+            return $redirector;
         });
     }
 }
